@@ -113,8 +113,8 @@ as_uchar4(float val)
  * - popc -> bitCount
  * - (u)char -> bitfieldExtract
  */
-#ifndef DEBUG_CWBVH_TRAVERSAL
 vec4
+#ifndef DEBUG_CWBVH_TRAVERSAL
 traverse_cwbvh(Ray ray, uint bvhNodeStart, uint primitiveStart, float t)
 #else
 traverse_cwbvh(Ray ray, uint bvhNodeStart, uint primitiveStart, float t, inout uint stepCount)
@@ -159,7 +159,6 @@ traverse_cwbvh(Ray ray, uint bvhNodeStart, uint primitiveStart, float t, inout u
 			const uint relative_index = bitCount( imask & ~(0xFFFFFFFF << slot_index) );
 			const uint child_node_index = bvhNodeStart + child_node_base_index + relative_index;
 
-			// @TODO: Offset node with BLAS offset.
 			BVHNode node = nodes[child_node_index];
 
 			ngroup.x = floatBitsToUint(node.n1.x);
@@ -346,7 +345,8 @@ sceneHit(Ray ray)
 }
 
 #ifdef DEBUG_CWBVH_TRAVERSAL
-uint sceneTraversal(Ray ray)
+uint
+sceneTraversal(Ray ray)
 {
 	uint stepCount = 0;
 	for (uint i = 0; i < instances.length(); ++i)

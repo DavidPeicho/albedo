@@ -1,6 +1,8 @@
-use tinybvh_rs::cwbvh;
+use std::time::Duration;
 
 use crate::{uniforms::Instance, BVHNode, BVHPrimitive, Vertex};
+use obvhs::{self, triangle::Triangle};
+use tinybvh_rs::cwbvh::{self, Primitive};
 
 #[derive(Copy, Clone)]
 pub struct MeshDescriptor<'a> {
@@ -47,6 +49,77 @@ pub struct BLASArray {
     pub instances: Vec<Instance>,
 }
 
+fn test(positions: pas::Slice<'_, [f32; 4]>) -> (Vec<BVHNode>, Vec<BVHPrimitive>) {
+    let count = positions.len() / 3;
+    let mut tris = Vec::with_capacity(count);
+    for i in 0..count {
+        let index = i * 3;
+        tris.push(Triangle {
+            v0: glam::Vec3A::new(
+                positions[index][0],
+                positions[index][1],
+                positions[index][2],
+            ),
+            v1: glam::Vec3A::new(
+                positions[index + 1][0],
+                positions[index + 1][1],
+                positions[index + 1][2],
+            ),
+            v2: glam::Vec3A::new(
+                positions[index + 2][0],
+                positions[index + 2][1],
+                positions[index + 2][2],
+            ),
+        });
+    }
+    let bvh = obvhs::cwbvh::builder::build_cwbvh_from_tris(
+        &tris,
+        obvhs::BvhBuildParams::medium_build(),
+        &mut Duration::default(),
+    );
+
+    let mut nodes = Vec::with_capacity(bvh.nodes.len());
+    for node in &bvh.nodes {
+        nodes.push(BVHNode {
+            min: node.p.to_array(),
+            exyz: [
+                // Traversal code performs the exp2 unpacking, because
+                // tinybvh doesn't bake it in exyz, at the opposite of obvh.
+                node.e[0].wrapping_sub(127),
+                node.e[1].wrapping_sub(127),
+                node.e[2].wrapping_sub(127),
+            ],
+            imask: node.imask,
+            child_base_idx: node.child_base_idx,
+            primitive_base_idx: node.primitive_base_idx,
+            child_meta: node.child_meta,
+            qlo_x: node.child_min_x,
+            qlo_y: node.child_min_y,
+            qlo_z: node.child_min_z,
+            qhi_x: node.child_max_x,
+            qhi_y: node.child_max_y,
+            qhi_z: node.child_max_z,
+        });
+    }
+
+    let mut primitives: Vec<Primitive> = Vec::with_capacity(bvh.primitive_indices.len());
+    for index in bvh.primitive_indices {
+        let tri = &tris[index as usize];
+        let edge_1 = tri.v1 - tri.v0;
+        let edge_2 = tri.v2 - tri.v0;
+        primitives.push(Primitive {
+            edge_1: [edge_1.x, edge_1.y, edge_1.z],
+            padding_0: 0,
+            edge_2: [edge_2.x, edge_2.y, edge_2.z],
+            padding_1: 0,
+            vertex_0: [tri.v0.x, tri.v0.y, tri.v0.z],
+            original_primitive: index as u32,
+        });
+    }
+
+    (nodes, primitives)
+}
+
 impl BLASArray {
     pub fn new() -> Self {
         Self {
@@ -83,9 +156,15 @@ impl BLASArray {
                 vertices[i].normal[3] = uv[1];
             }
         }
-        let bvh = cwbvh::BVH::new_hq(mesh.positions);
-        self.nodes.extend(bvh.nodes());
-        self.primitives.extend(bvh.primitives());
+        // let bvh = cwbvh::BVH::new_hq(mesh.positions);
+        // self.nodes.extend(bvh.nodes());
+        // self.primitives.extend(bvh.primitives());
+
+        // DEBUG
+        let val = test(mesh.positions);
+        self.nodes.extend(val.0);
+        self.primitives.extend(val.1);
+        // END DEBUG
     }
 
     pub fn add_bvh_indexed(&mut self, desc: IndexedMeshDescriptor) {
@@ -123,8 +202,15 @@ impl BLASArray {
         let positions: pas::Slice<[f32; 4]> = pas::Slice::new(vertices, 0);
 
         let bvh = cwbvh::BVH::new_hq(positions);
-        self.nodes.extend(bvh.nodes());
-        self.primitives.extend(bvh.primitives());
+        let nodes = bvh.nodes();
+        println!("Nodes = {}", nodes.len());
+        // self.nodes.extend(bvh.nodes());
+        // self.primitives.extend(bvh.primitives());
+        // DEBUG
+        let val = test(positions);
+        self.nodes.extend(val.0);
+        self.primitives.extend(val.1);
+        // END DEBUG
     }
 
     pub fn add_instance(&mut self, bvh_index: u32, model_to_world: glam::Mat4, material: u32) {

@@ -13,8 +13,10 @@ albedo_backend = { path = "../albedo_backend", version = "0.0.1-beta.0" }
 albedo_math = { path = "../albedo_math", version = "0.0.1-beta.0" }
 bytemuck = { workspace = true }
 pas = { workspace = true }
-glam = "0.20.2"
+glam = "0.29.0"
 bitflags = "2.6.0"
 rust-embed = "8"
 tinybvh-rs = { version = "0.1.0-beta.2" }
+# tinybvh-rs = { path = "../../../../tinybvh-rs" }
+obvhs = { version="0.2.0" }
 wgpu = { workspace = true }
