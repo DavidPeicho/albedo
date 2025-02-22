@@ -262,6 +262,10 @@ traverse_cwbvh(Ray ray, uint bvhNodeStart, uint primitiveStart, float t, inout u
 
 		while (tgroup.y != 0u)
 		{
+			#ifdef DEBUG_CWBVH_TRAVERSAL
+			++stepCount;
+			#endif
+
 			// M�ller-Trumbore intersection; triangles are stored as 3x16 bytes,
 			// with the original primitive index in the (otherwise unused) w
 			// component of vertex 0.

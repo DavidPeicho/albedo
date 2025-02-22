@@ -1,9 +1,8 @@
 use std::time::Duration;
 
 use crate::{uniforms::Instance, BVHNode, BVHPrimitive, Vertex};
-use obvhs::{self, triangle::Triangle, Transformable};
-use std::f32::consts::PI;
-use tinybvh_rs::cwbvh::{self, Primitive};
+use obvhs::{self, triangle::Triangle};
+use tinybvh_rs::cwbvh;
 
 #[derive(Copy, Clone)]
 pub struct MeshDescriptor<'a> {
@@ -48,78 +47,6 @@ pub struct BLASArray {
     pub primitives: Vec<BVHPrimitive>,
     pub vertices: Vec<Vertex>,
     pub instances: Vec<Instance>,
-}
-
-const fn vec(a: f32, b: f32, c: f32) -> glam::Vec3A {
-    glam::Vec3A::new(a, b, c)
-}
-
-const fn tri(v0: glam::Vec3A, v1: glam::Vec3A, v2: glam::Vec3A) -> Triangle {
-    Triangle { v0, v1, v2 }
-}
-
-/// Cube triangle mesh with side length of 2 centered at 0,0,0
-pub const CUBE: [Triangle; 12] = [
-    tri(vec(-1., 1., -1.), vec(1., 1., 1.), vec(1., 1., -1.)),
-    tri(vec(1., 1., 1.), vec(-1., -1., 1.), vec(1., -1., 1.)),
-    tri(vec(-1., 1., 1.), vec(-1., -1., -1.), vec(-1., -1., 1.)),
-    tri(vec(1., -1., -1.), vec(-1., -1., 1.), vec(-1., -1., -1.)),
-    tri(vec(1., 1., -1.), vec(1., -1., 1.), vec(1., -1., -1.)),
-    tri(vec(-1., 1., -1.), vec(1., -1., -1.), vec(-1., -1., -1.)),
-    tri(vec(-1., 1., -1.), vec(-1., 1., 1.), vec(1., 1., 1.)),
-    tri(vec(1., 1., 1.), vec(-1., 1., 1.), vec(-1., -1., 1.)),
-    tri(vec(-1., 1., 1.), vec(-1., 1., -1.), vec(-1., -1., -1.)),
-    tri(vec(1., -1., -1.), vec(1., -1., 1.), vec(-1., -1., 1.)),
-    tri(vec(1., 1., -1.), vec(1., 1., 1.), vec(1., -1., 1.)),
-    tri(vec(-1., 1., -1.), vec(1., 1., -1.), vec(1., -1., -1.)),
-];
-
-/// Plane triangle mesh with side length of 2 centered at 0,0,0
-pub const PLANE: [Triangle; 2] = [
-    tri(vec(1., 0., 1.), vec(-1., 0., -1.), vec(-1., 0., 1.)),
-    tri(vec(1., 0., 1.), vec(1., 0., -1.), vec(-1., 0., -1.)),
-];
-
-fn generate_cornell_box() -> Vec<Triangle> {
-    let floor = PLANE;
-    let mut box1 = CUBE;
-    let mut box2 = box1.clone();
-    let mut ceiling = floor.clone();
-    let mut wall1 = floor.clone();
-    let mut wall2 = floor.clone();
-    let mut wall3 = floor.clone();
-    box1.transform(&glam::Mat4::from_scale_rotation_translation(
-        glam::Vec3::splat(0.3),
-        glam::Quat::from_rotation_y(-17.5f32.to_radians()),
-        glam::Vec3::new(0.33, 0.3, 0.37),
-    ));
-    box2.transform(&glam::Mat4::from_scale_rotation_translation(
-        glam::Vec3::new(0.3, 0.6, 0.3),
-        glam::Quat::from_rotation_y(17.5f32.to_radians()),
-        glam::Vec3::new(-0.33, 0.6, -0.29),
-    ));
-    ceiling.transform(&glam::Mat4::from_translation(glam::Vec3::Y * 2.0));
-    wall1.transform(&glam::Mat4::from_rotation_translation(
-        glam::Quat::from_rotation_x(PI * 0.5),
-        glam::Vec3::new(0.0, 1.0, -1.0),
-    ));
-    wall2.transform(&glam::Mat4::from_rotation_translation(
-        glam::Quat::from_rotation_z(-PI * 0.5),
-        glam::Vec3::new(-1.0, 1.0, 0.0),
-    ));
-    wall3.transform(&glam::Mat4::from_rotation_translation(
-        glam::Quat::from_rotation_z(-PI * 0.5),
-        glam::Vec3::new(1.0, 1.0, 0.0),
-    ));
-    let mut tris = Vec::new();
-    tris.extend(floor);
-    tris.extend(box1);
-    tris.extend(box2);
-    tris.extend(ceiling);
-    tris.extend(wall1);
-    tris.extend(wall2);
-    tris.extend(wall3);
-    tris
 }
 
 fn test(positions: pas::Slice<'_, [f32; 4]>) -> (Vec<BVHNode>, Vec<BVHPrimitive>) {
@@ -167,18 +94,18 @@ fn test(positions: pas::Slice<'_, [f32; 4]>) -> (Vec<BVHNode>, Vec<BVHPrimitive>
         });
     }
 
-    let mut primitives: Vec<Primitive> = Vec::with_capacity(bvh.primitive_indices.len());
+    let mut primitives: Vec<BVHPrimitive> = Vec::with_capacity(bvh.primitive_indices.len());
     for index in bvh.primitive_indices {
         let tri = &tris[index as usize];
-        let edge_1 = tri.v1 - tri.v0;
-        let edge_2 = tri.v2 - tri.v0;
-        primitives.push(Primitive {
+        let edge_1 = tri.v2 - tri.v0;
+        let edge_2 = tri.v1 - tri.v0;
+        primitives.push(BVHPrimitive {
             edge_1: edge_1.to_array(),
             padding_0: 0,
             edge_2: edge_2.to_array(),
             padding_1: 0,
             vertex_0: tri.v0.to_array(),
-            original_primitive: index as u32,
+            original_primitive: index,
         });
     }
 
@@ -221,9 +148,9 @@ impl BLASArray {
                 vertices[i].normal[3] = uv[1];
             }
         }
-        // let bvh = cwbvh::BVH::new_hq(mesh.positions);
-        // self.nodes.extend(bvh.nodes());
-        // self.primitives.extend(bvh.primitives());
+        let bvh = cwbvh::BVH::new_hq(mesh.positions);
+        self.nodes.extend(bvh.nodes());
+        self.primitives.extend(bvh.primitives());
 
         // DEBUG
         let val = test(mesh.positions);
@@ -266,9 +193,9 @@ impl BLASArray {
         let vertices: &[Vertex] = &self.vertices[start..];
         let positions: pas::Slice<[f32; 4]> = pas::Slice::new(vertices, 0);
 
-        // let bvh = cwbvh::BVH::new_hq(positions);
-        // self.nodes.extend(bvh.nodes());
-        // self.primitives.extend(bvh.primitives());
+        let bvh = cwbvh::BVH::new_hq(positions);
+        self.nodes.extend(bvh.nodes());
+        self.primitives.extend(bvh.primitives());
         // DEBUG
         let val = test(positions);
         self.nodes.extend(val.0);
