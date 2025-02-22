@@ -1,7 +1,8 @@
-use std::time::Duration;
-
 use crate::{uniforms::Instance, BVHNode, BVHPrimitive, Vertex};
+
+#[cfg(not(feature = "tinybvh"))]
 use obvhs::{self, triangle::Triangle};
+#[cfg(feature = "tinybvh")]
 use tinybvh_rs::cwbvh;
 
 #[derive(Copy, Clone)]
@@ -49,7 +50,11 @@ pub struct BLASArray {
     pub instances: Vec<Instance>,
 }
 
-fn test(positions: pas::Slice<'_, [f32; 4]>) -> (Vec<BVHNode>, Vec<BVHPrimitive>) {
+#[cfg(not(feature = "tinybvh"))]
+fn obvh_to_tinybvh(positions: pas::Slice<'_, [f32; 4]>) -> (Vec<BVHNode>, Vec<BVHPrimitive>) {
+    // TODO: This should be heavily optimized.
+    // - obvh allows to directly build from AABB
+    // - Make a PR to obvh to allow using positions
     let count = positions.len() / 3;
     let mut tris = Vec::with_capacity(count);
     for i in 0..count {
@@ -67,7 +72,7 @@ fn test(positions: pas::Slice<'_, [f32; 4]>) -> (Vec<BVHNode>, Vec<BVHPrimitive>
     let bvh = obvhs::cwbvh::builder::build_cwbvh_from_tris(
         &tris,
         obvhs::BvhBuildParams::medium_build(),
-        &mut Duration::default(),
+        &mut std::time::Duration::default(),
     );
 
     let mut nodes = Vec::with_capacity(bvh.nodes.len());
@@ -148,15 +153,18 @@ impl BLASArray {
                 vertices[i].normal[3] = uv[1];
             }
         }
-        let bvh = cwbvh::BVH::new_hq(mesh.positions);
-        self.nodes.extend(bvh.nodes());
-        self.primitives.extend(bvh.primitives());
-
-        // DEBUG
-        let val = test(mesh.positions);
-        self.nodes.extend(val.0);
-        self.primitives.extend(val.1);
-        // END DEBUG
+        #[cfg(feature = "tinybvh")]
+        {
+            let bvh = cwbvh::BVH::new_hq(mesh.positions);
+            self.nodes.extend(bvh.nodes());
+            self.primitives.extend(bvh.primitives());
+        }
+        #[cfg(not(feature = "tinybvh"))]
+        {
+            let value = obvh_to_tinybvh(mesh.positions);
+            self.nodes.extend(value.0);
+            self.primitives.extend(value.1);
+        }
     }
 
     pub fn add_bvh_indexed(&mut self, desc: IndexedMeshDescriptor) {
@@ -193,14 +201,18 @@ impl BLASArray {
         let vertices: &[Vertex] = &self.vertices[start..];
         let positions: pas::Slice<[f32; 4]> = pas::Slice::new(vertices, 0);
 
-        let bvh = cwbvh::BVH::new_hq(positions);
-        self.nodes.extend(bvh.nodes());
-        self.primitives.extend(bvh.primitives());
-        // DEBUG
-        let val = test(positions);
-        self.nodes.extend(val.0);
-        self.primitives.extend(val.1);
-        // END DEBUG
+        #[cfg(feature = "tinybvh")]
+        {
+            let bvh = cwbvh::BVH::new_hq(positions);
+            self.nodes.extend(bvh.nodes());
+            self.primitives.extend(bvh.primitives());
+        }
+        #[cfg(not(feature = "tinybvh"))]
+        {
+            let value = obvh_to_tinybvh(positions);
+            self.nodes.extend(value.0);
+            self.primitives.extend(value.1);
+        }
     }
 
     pub fn add_instance(&mut self, bvh_index: u32, model_to_world: glam::Mat4, material: u32) {

@@ -358,10 +358,56 @@ pub struct RadianceParameters {
     pub use_noise_texture: u32,
 }
 
+#[cfg(feature = "tinybvh")]
 pub type BVHNode = tinybvh_rs::cwbvh::Node;
+#[cfg(not(feature = "tinybvh"))]
+#[repr(C)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
+/// Layout from from tinybvh-rs.
+///
+/// Note: obvh has a different field ordering and shouldn't be used as-is.
+pub struct BVHNode {
+    /// AABB min.
+    pub min: [f32; 3],
+    /// Exponent used for child AABB decompression.
+    pub exyz: [u8; 3],
+    /// `1` for node, `0` for leaf.
+    pub imask: u8,
+    /// First child index.
+    pub child_base_idx: u32,
+    // First primitive index.
+    pub primitive_base_idx: u32,
+    /// Child [0..7] metadata.
+    pub child_meta: [u8; 8],
+    // AABB minimum x-axis compressed bound, one entry per child.
+    pub qlo_x: [u8; 8],
+    // AABB minimum y-axis compressed bound, one entry per child.
+    pub qlo_y: [u8; 8],
+    // AABB minimum z-axis compressed bound, one entry per child.
+    pub qlo_z: [u8; 8],
+    // AABB maximum x-axis compressed bound, one entry per child.
+    pub qhi_x: [u8; 8],
+    // AABB maximum y-axis compressed bound, one entry per child.
+    pub qhi_y: [u8; 8],
+    // AABB maximum z-axis compressed bound, one entry per child.
+    pub qhi_z: [u8; 8],
+}
 impl Uniform for BVHNode {}
 
+#[cfg(feature = "tinybvh")]
 pub type BVHPrimitive = tinybvh_rs::cwbvh::Primitive;
+#[cfg(not(feature = "tinybvh"))]
+/// Layout from from tinybvh-rs.
+#[repr(C)]
+#[derive(Clone, Copy, Default, PartialEq, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct BVHPrimitive {
+    pub edge_1: [f32; 3],
+    pub padding_0: u32,
+    pub edge_2: [f32; 3],
+    pub padding_1: u32,
+    pub vertex_0: [f32; 3],
+    pub original_primitive: u32,
+}
 impl Uniform for BVHPrimitive {}
 
 pub struct RaytraceResources<'a> {
