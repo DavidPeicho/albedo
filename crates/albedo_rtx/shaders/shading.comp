@@ -2,7 +2,7 @@
 
 // #define EMIT_GBUFFER
 // #define DEBUG_CWBVH_TRAVERSAL
-// #define USE_PROBE
+#define USE_PROBE
 #define USE_DENOISER
 
 #include "imports/structures.glsl"

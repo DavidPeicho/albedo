@@ -1,6 +1,9 @@
-use tinybvh_rs::cwbvh;
-
 use crate::{uniforms::Instance, BVHNode, BVHPrimitive, Vertex};
+
+#[cfg(not(feature = "tinybvh"))]
+use obvhs::{self, triangle::Triangle};
+#[cfg(feature = "tinybvh")]
+use tinybvh_rs::cwbvh;
 
 #[derive(Copy, Clone)]
 pub struct MeshDescriptor<'a> {
@@ -47,6 +50,73 @@ pub struct BLASArray {
     pub instances: Vec<Instance>,
 }
 
+#[cfg(not(feature = "tinybvh"))]
+fn obvh_to_tinybvh(positions: pas::Slice<'_, [f32; 4]>) -> (Vec<BVHNode>, Vec<BVHPrimitive>) {
+    // TODO: This should be heavily optimized.
+    // - obvh allows to directly build from AABB
+    // - Make a PR to obvh to allow using positions
+    let count = positions.len() / 3;
+    let mut tris = Vec::with_capacity(count);
+    for i in 0..count {
+        let index = i * 3;
+        let v0 = &positions[index];
+        let v1 = &positions[index + 1];
+        let v2 = &positions[index + 2];
+        tris.push(Triangle {
+            v0: glam::Vec3A::new(v0[0], v0[1], v0[2]),
+            v1: glam::Vec3A::new(v1[0], v1[1], v1[2]),
+            v2: glam::Vec3A::new(v2[0], v2[1], v2[2]),
+        });
+    }
+    // let tris = generate_cornell_box();
+    let bvh = obvhs::cwbvh::builder::build_cwbvh_from_tris(
+        &tris,
+        obvhs::BvhBuildParams::medium_build(),
+        &mut std::time::Duration::default(),
+    );
+
+    let mut nodes = Vec::with_capacity(bvh.nodes.len());
+    for node in &bvh.nodes {
+        nodes.push(BVHNode {
+            min: node.p.to_array(),
+            exyz: [
+                // Traversal code performs the exp2 unpacking, because
+                // tinybvh doesn't bake it in exyz, at the opposite of obvh.
+                node.e[0].wrapping_sub(127),
+                node.e[1].wrapping_sub(127),
+                node.e[2].wrapping_sub(127),
+            ],
+            imask: node.imask,
+            child_base_idx: node.child_base_idx,
+            primitive_base_idx: node.primitive_base_idx * 3, // Diff between tinybvh & obvh
+            child_meta: node.child_meta,
+            qlo_x: node.child_min_x,
+            qlo_y: node.child_min_y,
+            qlo_z: node.child_min_z,
+            qhi_x: node.child_max_x,
+            qhi_y: node.child_max_y,
+            qhi_z: node.child_max_z,
+        });
+    }
+
+    let mut primitives: Vec<BVHPrimitive> = Vec::with_capacity(bvh.primitive_indices.len());
+    for index in bvh.primitive_indices {
+        let tri = &tris[index as usize];
+        let edge_1 = tri.v2 - tri.v0;
+        let edge_2 = tri.v1 - tri.v0;
+        primitives.push(BVHPrimitive {
+            edge_1: edge_1.to_array(),
+            padding_0: 0,
+            edge_2: edge_2.to_array(),
+            padding_1: 0,
+            vertex_0: tri.v0.to_array(),
+            original_primitive: index,
+        });
+    }
+
+    (nodes, primitives)
+}
+
 impl BLASArray {
     pub fn new() -> Self {
         Self {
@@ -83,9 +153,18 @@ impl BLASArray {
                 vertices[i].normal[3] = uv[1];
             }
         }
-        let bvh = cwbvh::BVH::new_hq(mesh.positions);
-        self.nodes.extend(bvh.nodes());
-        self.primitives.extend(bvh.primitives());
+        #[cfg(feature = "tinybvh")]
+        {
+            let bvh = cwbvh::BVH::new_hq(mesh.positions);
+            self.nodes.extend(bvh.nodes());
+            self.primitives.extend(bvh.primitives());
+        }
+        #[cfg(not(feature = "tinybvh"))]
+        {
+            let value = obvh_to_tinybvh(mesh.positions);
+            self.nodes.extend(value.0);
+            self.primitives.extend(value.1);
+        }
     }
 
     pub fn add_bvh_indexed(&mut self, desc: IndexedMeshDescriptor) {
@@ -122,9 +201,18 @@ impl BLASArray {
         let vertices: &[Vertex] = &self.vertices[start..];
         let positions: pas::Slice<[f32; 4]> = pas::Slice::new(vertices, 0);
 
-        let bvh = cwbvh::BVH::new_hq(positions);
-        self.nodes.extend(bvh.nodes());
-        self.primitives.extend(bvh.primitives());
+        #[cfg(feature = "tinybvh")]
+        {
+            let bvh = cwbvh::BVH::new_hq(positions);
+            self.nodes.extend(bvh.nodes());
+            self.primitives.extend(bvh.primitives());
+        }
+        #[cfg(not(feature = "tinybvh"))]
+        {
+            let value = obvh_to_tinybvh(positions);
+            self.nodes.extend(value.0);
+            self.primitives.extend(value.1);
+        }
     }
 
     pub fn add_instance(&mut self, bvh_index: u32, model_to_world: glam::Mat4, material: u32) {

@@ -1,3 +1,6 @@
+#[cfg(all(target_arch = "wasm32", target_os = "unknown", feature = "tinybvh"))]
+compile_error!("only the emscripten target supports the feature \"tinybvh\"");
+
 pub mod blas;
 pub mod layouts;
 pub mod macros;
