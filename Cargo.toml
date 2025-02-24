@@ -17,12 +17,8 @@ members = ["crates/*"]
 
 [workspace.dependencies]
 bytemuck = { version = "1.7.2", features = ["derive"] }
-wgpu = { version = "23.0.0", features = ["spirv", "glsl", "naga-ir"] }
+wgpu = { version = "24.0.0", features = ["spirv", "glsl", "naga-ir"] }
 pas = "0.3.0"
-
-# @todo: Remove when merged: https://github.com/gfx-rs/wgpu/pull/6513
-[patch.crates-io]
-wgpu = { git = "https://github.com/DavidPeicho/wgpu", branch = "trunk", "features" = ["glsl-in"] }
 
 [dev-dependencies]
 albedo_backend = { path = "crates/albedo_backend" }
@@ -30,7 +26,7 @@ albedo_rtx = { path = "crates/albedo_rtx" }
 bytemuck = { version = "1.7.2", features = ["derive"] }
 image = { version = "0.23", default-features = false, features = ["hdr"] }
 enumflags2 = "0.7.1"
-winit = "0.29.4"
+winit = "0.30.5"
 glam = "0.20.2"
 gltf = "0.15.2"
 pollster = "0.2"
@@ -46,124 +42,7 @@ js-sys = "0.3.60"
 log = "0.4"
 console_log = "0.2"
 console_error_panic_hook = "0.1.7"
-web-sys = { version = "0.3.60", features = [
-    "Document",
-    "Navigator",
-    "Node",
-    "NodeList",
-    "Gpu",
-    "GpuAdapter",
-    "GpuAddressMode",
-    "GpuBindGroup",
-    "GpuBindGroupDescriptor",
-    "GpuBindGroupEntry",
-    "GpuBindGroupLayout",
-    "GpuBindGroupLayoutDescriptor",
-    "GpuBindGroupLayoutEntry",
-    "GpuBlendComponent",
-    "GpuBlendFactor",
-    "GpuBlendOperation",
-    "GpuBlendState",
-    "GpuBuffer",
-    "GpuBufferBinding",
-    "GpuBufferBindingLayout",
-    "GpuBufferBindingType",
-    "GpuBufferDescriptor",
-    "GpuCanvasContext",
-    "GpuCanvasConfiguration",
-    "GpuColorDict",
-    "GpuColorTargetState",
-    "GpuCommandBuffer",
-    "GpuCommandBufferDescriptor",
-    "GpuCommandEncoder",
-    "GpuCommandEncoderDescriptor",
-    "GpuCompareFunction",
-    "GpuCompilationInfo",
-    "GpuCompilationMessage",
-    "GpuCompilationMessageType",
-    "GpuComputePassDescriptor",
-    "GpuComputePassEncoder",
-    "GpuComputePipeline",
-    "GpuComputePipelineDescriptor",
-    "GpuCullMode",
-    "GpuDepthStencilState",
-    "GpuDevice",
-    "GpuDeviceDescriptor",
-    "GpuDeviceLostInfo",
-    "GpuDeviceLostReason",
-    "GpuErrorFilter",
-    "GpuExtent3dDict",
-    "GpuFeatureName",
-    "GpuFilterMode",
-    "GpuFragmentState",
-    "GpuFrontFace",
-    "GpuImageCopyBuffer",
-    "GpuImageCopyTexture",
-    "GpuImageDataLayout",
-    "GpuIndexFormat",
-    "GpuLoadOp",
-    "GpuMultisampleState",
-    "GpuObjectDescriptorBase",
-    "GpuOrigin2dDict",
-    "GpuOrigin3dDict",
-    "GpuOutOfMemoryError",
-    "GpuPipelineDescriptorBase",
-    "GpuPipelineLayout",
-    "GpuPipelineLayoutDescriptor",
-    "GpuPowerPreference",
-    "GpuPrimitiveState",
-    "GpuPrimitiveTopology",
-    "GpuProgrammableStage",
-    "GpuQuerySet",
-    "GpuQuerySetDescriptor",
-    "GpuQueryType",
-    "GpuQueue",
-    "GpuRenderBundle",
-    "GpuRenderBundleDescriptor",
-    "GpuRenderBundleEncoder",
-    "GpuRenderBundleEncoderDescriptor",
-    "GpuRenderPassColorAttachment",
-    "GpuRenderPassDepthStencilAttachment",
-    "GpuRenderPassDescriptor",
-    "GpuRenderPassEncoder",
-    "GpuRenderPipeline",
-    "GpuRenderPipelineDescriptor",
-    "GpuRequestAdapterOptions",
-    "GpuSampler",
-    "GpuSamplerBindingLayout",
-    "GpuSamplerBindingType",
-    "GpuSamplerDescriptor",
-    "GpuShaderModule",
-    "GpuShaderModuleDescriptor",
-    "GpuStencilFaceState",
-    "GpuStencilOperation",
-    "GpuStorageTextureAccess",
-    "GpuStorageTextureBindingLayout",
-    "GpuStoreOp",
-    "GpuSupportedFeatures",
-    "GpuSupportedLimits",
-    "GpuTexture",
-    "GpuTextureAspect",
-    "GpuTextureBindingLayout",
-    "GpuTextureDescriptor",
-    "GpuTextureDimension",
-    "GpuTextureFormat",
-    "GpuTextureSampleType",
-    "GpuTextureView",
-    "GpuTextureViewDescriptor",
-    "GpuTextureViewDimension",
-    "GpuUncapturedErrorEvent",
-    "GpuUncapturedErrorEventInit",
-    "GpuValidationError",
-    "GpuVertexAttribute",
-    "GpuVertexBufferLayout",
-    "GpuVertexFormat",
-    "GpuVertexState",
-    "GpuVertexStepMode",
-    "HtmlCanvasElement",
-    "OffscreenCanvas",
-    "Window",
-]}
+web-sys = { version = "0.3.74", default-features = false }
 
 [[example]]
 name = "gpu_picking"

@@ -12,9 +12,6 @@ keywords = ["raytracing", "graphics" ]
 default = ["tinybvh"]
 tinybvh = ["dep:tinybvh-rs"]
 
-[target.'cfg(target_arch = "wasm32")'.features]
-default  = []
-
 [dependencies]
 albedo_backend = { path = "../albedo_backend", version = "0.0.1-beta.0" }
 albedo_math = { path = "../albedo_math", version = "0.0.1-beta.0" }
