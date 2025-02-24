@@ -151,9 +151,9 @@ impl Renderer {
 
         encoder.copy_texture_to_buffer(
             texture.as_image_copy(),
-            wgpu::ImageCopyBuffer {
+            wgpu::TexelCopyBufferInfo {
                 buffer: &gpu_buffer,
-                layout: wgpu::ImageDataLayout {
+                layout: wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(
                         std::num::NonZeroU32::new(alignment.padded_bytes() as u32).unwrap(),

@@ -208,7 +208,7 @@ impl TextureAtlas {
 
         // Write texture data.
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.texture,
                 aspect: wgpu::TextureAspect::All,
                 mip_level: 0,
@@ -219,7 +219,7 @@ impl TextureAtlas {
                 },
             },
             data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(rgba_bytes_per_row(block.width())),
                 rows_per_image: Some(block.height()),
@@ -234,7 +234,7 @@ impl TextureAtlas {
         // Write texture block
         let block_data = bytemuck::bytes_of(&block);
         queue.write_texture(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture: &self.texture_blocks,
                 aspect: wgpu::TextureAspect::All,
                 mip_level: 0,
@@ -245,7 +245,7 @@ impl TextureAtlas {
                 },
             },
             block_data,
-            wgpu::ImageDataLayout {
+            wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(16), // RGBA, 4 bytes each
                 rows_per_image: None,

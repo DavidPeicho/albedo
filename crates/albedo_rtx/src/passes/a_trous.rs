@@ -195,13 +195,13 @@ impl ATrousPass {
             }
             if i == 0 {
                 encoder.copy_texture_to_texture(
-                    wgpu::ImageCopyTexture {
+                    wgpu::TexelCopyTextureInfo {
                         texture: &first_output,
                         mip_level: 0,
                         origin: wgpu::Origin3d::ZERO,
                         aspect: wgpu::TextureAspect::All,
                     },
-                    wgpu::ImageCopyTexture {
+                    wgpu::TexelCopyTextureInfo {
                         texture: &retain,
                         mip_level: 0,
                         origin: wgpu::Origin3d::ZERO,
