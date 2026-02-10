@@ -5,7 +5,7 @@ Rust framework dedicated to real-time visualization.
 </p>
 
 <p align="center">
-  <img src="logo.png" style="width: 424px; margin: auto;"></img>
+  <img src="screenshots/sponza.png" style="margin: auto;"></img>
 </p>
 
 ## Disclaimer
