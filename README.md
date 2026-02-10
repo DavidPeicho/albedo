@@ -35,8 +35,6 @@ use as the rendering module for a game, but that's not the use case why it was d
 
 The [albedo_rtx](./crates/albedo_rtx) exposes GPU software Raytracing. You can use this crate to perform Ray-Triangle intersections.
 
-![Pathtracing Example](https://github.com/DavidPeicho/albedo/raw/master/screenshots/initial_result.gif)
-
 * CWBVH from [tinybvh-rs](https://github.com/DavidPeicho/tinybvh-rs/)
 * SVGF (Semi-working for now)
 
