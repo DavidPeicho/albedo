@@ -11,6 +11,9 @@ Rust framework dedicated to real-time visualization.
 ## Disclaimer
 ---
 
+> This library is far from dead, but continued closed source for the time being.
+> I will update as soon on possible on the future of this!
+
 🚧 Albedo is a work-in-progress and might be unstable, use it at your own risks 🚧
 
 ## Goals
